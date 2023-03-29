@@ -1,0 +1,41 @@
+# Sync Azure DevOps repository with GitHub repository
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Set up git credentials
+      git config --global user.email "youremail@example.com"
+      git config --global user.name "Your Name"
+      git config --global credential.helper store
+      
+      # Clone the Azure DevOps repository
+      git clone $(System.CollectionUri)/$(System.TeamProject)/_git/$(Build.Repository.Name) repo
+      
+      # Set up GitHub credentials
+      echo "${{ secrets.GITHUB_TOKEN }}" > token.txt
+      
+      # Add the GitHub repository as a remote
+      git remote add github https://github.com/<username>/<repo-name>.git
+      
+      # Fetch the latest changes from GitHub
+      git fetch github
+      
+      # Merge the changes from GitHub into the Azure DevOps repository
+      git merge github/main
+      
+      # Push the changes back to Azure DevOps
+      git push origin main
+      
+      # Clean up
+      Remove-Item -Recurse -Force repo
+      
+  env:
+    GITHUB_TOKEN: $(github-token)
+
